@@ -102,7 +102,7 @@ function introduction {
     echo "${INTRO_LEN}s Introduction Slide"
     ffmpeg -f lavfi -i color=c=white:size=${RESOLUTION}:rate=${FRAMERATE} \
     -vf "drawtext=textfile=${IN_NAME}: fontsize=${font_size}: \
-    x=(w-tw)/2: y=h-h*0.95: fontcolor=black:" -t ${INTRO_LEN} \
+    x=(w-tw)/2: y=h-h*0.95: fontcolor=Black:" -t ${INTRO_LEN} \
     -preset ${PRESET} -tune stillimage -y -loglevel warning \
     -stats ${filename}
     echo "file ${filename}" >> ${TMPDIR}/filelist.txt
