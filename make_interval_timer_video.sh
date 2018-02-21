@@ -85,13 +85,13 @@ let INTRO_SIZE_MAX=${VH}*${INTRO_SIZE_MAX}/100
 let INTRO_SIZE_MIN=${VH}*${INTRO_SIZE_MIN}/100
 
 # Map the input text file into an array
-mapfile -t SETLIST < ${IN_NAME}
+mapfile -t SET_LIST < ${IN_NAME}
 
 # The file number COUNTER
 let COUNTER=0
 
 # The length of the set
-let SETLEN=${#SETLIST[@]}-1
+let SET_LEN=${#SET_LIST[@]}-1
 
 ################################# Functions ####################################
 # Generate the introduction slide
@@ -142,19 +142,19 @@ function videoSegment {
 # Process the set array, and call the video segment generator
 # Calling convention: segment_id
 function setSegment {
-    thisLine=${SETLIST[${1}]}
+    thisLine=${SET_LIST[${1}]}
     timing=$(echo $thisLine|cut -d ' ' -f 1)
     min=$(echo $timing|cut -d ':' -f 1)
     sec=$(echo $timing|cut -d ':' -f 2)
     textNow=$(echo $thisLine|cut -d ' ' -f 2-)
 
     let nextSeg=${1}+1
-    if [ ${nextSeg} -le ${SETLEN} ]; then
-        nextLineP1=$(echo ${SETLIST[${nextSeg}]}|cut -d ' ' -f 1|tr ':' 'm')
-        nextLineP2=$(echo ${SETLIST[${nextSeg}]}|cut -d ' ' -f 2-)
+    if [ ${nextSeg} -le ${SET_LEN} ]; then
+        nextLineP1=$(echo ${SET_LIST[${nextSeg}]}|cut -d ' ' -f 1|tr ':' 'm')
+        nextLineP2=$(echo ${SET_LIST[${nextSeg}]}|cut -d ' ' -f 2-)
         nextLine="Next - ${nextLineP1}s ${nextLineP2}"
     else
-        nextLine="Next - We are done! 😊"
+        nextLine="Next - We are done! 😠"
     fi
 
     echo "Generating segment: ${thisLine} ..."
@@ -169,14 +169,35 @@ function output {
     -loglevel warning -stats -y ${OUT_NAME}
 }
 
-############################# THE MAIN PROGRAM #################################
-if [ ${SETLEN} -eq 0 ]; then
+function checkTotalTime {
+    let totalMin=0
+    let totalSec=0
+    for i in $(seq 0 ${SET_LEN}); do
+        thisLine=${SET_LIST[${i}]}
+        thisTiming=$(echo $thisLine|cut -d ' ' -f 1)
+        let totalMin=${totalMin}+$(echo $thisTiming|cut -d ':' -f 1)
+        let totalSec=${totalSec}+$(echo $thisTiming|cut -d ':' -f 2)
+    done
+    let totalSec=${totalSec}+${INTRO_LEN}
+    let secToMin=${totalSec}/60
+    let totalMin=${totalMin}+${secToMin}
+    let totalSec=${totalSec}-${secToMin}*60
+
+    echo "Total run time: ${totalMin} min ${totalSec} sec"
+    read -p "Press enter to continue, or Ctrl+C to cancel..."
+}
+
+############################# The main program #################################
+if [ ${SET_LEN} -eq 0 ]; then
     echo "${IN_NAME} is an invalid file, is it empty?"
     cleanup
     exit 1
 else
-    let INTRO_SIZE=${VH}/${SETLEN}*95/100
+    let INTRO_SIZE=${VH}/${SET_LEN}*95/100
 fi
+
+# Check the total run time before continuing
+checkTotalTime
 
 # If the font size is greater than the maximum font size, clamp it to maximum.
 if [ ${INTRO_SIZE} -gt ${INTRO_SIZE_MAX} ]; then
@@ -186,7 +207,7 @@ elif [ ${INTRO_SIZE} -gt ${INTRO_SIZE_MIN} ]; then
     introduction ${INTRO_SIZE}
 fi
 
-for i in $(seq 0 ${SETLEN}); do
+for i in $(seq 0 ${SET_LEN}); do
     setSegment ${i}
 done
 
